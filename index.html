@@ -1,40 +1,99 @@
 <!doctype html>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Verifying…</title>
-<script>
-(function() {
-  const params = new URLSearchParams(location.search);
-  const target = (params.get('target') || 'web').toLowerCase();
-  const hash = location.hash || ''; // includes #access_token=...
-
-  function redirectToWeb() {
-    location.replace('https://booking.privilist.com/router' + hash);
-  }
-
-  function redirectToApp() {
-    // Use custom URL scheme
-    const customScheme = 'privilist://privilist.com/router' + hash;
-    location.href = customScheme;
-    
-    // Fallback to web if app doesn't open within 1.5s
-    setTimeout(redirectToWeb, 1500);
-  }
-
-  function redirect() {
-    if (target === 'app') {
-      redirectToApp();
-    } else {
-      redirectToWeb();
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Verifying…</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Don't let crawlers index these token URLs -->
+  <meta name="robots" content="noindex,nofollow" />
+  <!-- Keep it client-only; never send tokens to a server -->
+  <meta http-equiv="Referrer-Policy" content="no-referrer">
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      display: grid; 
+      place-items: center; 
+      min-height: 100svh; 
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
     }
-  }
-
-  // Auto-redirect after a brief moment
-  setTimeout(redirect, 300);
-})();
-</script>
-<body style="font-family: system-ui; display:grid; place-items:center; min-height:100svh;">
-  <div>
+    .card { 
+      max-width: 460px; 
+      text-align: center; 
+      padding: 32px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    h1 { margin: 0 0 16px 0; font-size: 28px; }
+    p { margin: 8px 0; opacity: 0.9; }
+    button { 
+      padding: 12px 24px; 
+      border-radius: 12px; 
+      border: 0; 
+      cursor: pointer;
+      background: white;
+      color: #667eea;
+      font-weight: 600;
+      font-size: 16px;
+      margin-top: 16px;
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.95); }
+    #fallback { display: none; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
     <h1>Hold on…</h1>
     <p>We're verifying your link.</p>
+    <div id="fallback">
+      <p>If nothing happens, click below:</p>
+      <button id="go">Continue</button>
+    </div>
   </div>
+
+  <script>
+  (function() {
+    const params = new URLSearchParams(location.search);
+    const target = (params.get('target') || 'web').toLowerCase();
+    const hash   = location.hash || ''; // contains #access_token=...&refresh_token=...
+
+    // Targets
+    const webUrl = 'https://booking.privilist.com/router' + hash;
+    const appScheme = 'privilist://privilist.com/router' + hash;
+
+    function toWeb() { 
+      location.replace(webUrl); 
+    }
+    
+    function toApp() {
+      // Try custom URL scheme, fallback to web after ~1.5s if app not installed
+      const timer = setTimeout(toWeb, 1500);
+      location.href = appScheme;
+      // If app opens, page gets backgrounded and timer won't fire
+    }
+    
+    function go() { 
+      (target === 'app') ? toApp() : toWeb(); 
+    }
+
+    // Safer: wait for page to be visible (reduces email-scanner-trigger)
+    // Email scanners typically have visibilityState='hidden' or maxTouchPoints=0
+    const looksHuman = document.visibilityState === 'visible' && (navigator.maxTouchPoints || 0) >= 1;
+    
+    if (looksHuman) {
+      // Auto-redirect for human users after brief delay
+      setTimeout(go, 200);
+    } else {
+      // Show manual button for email scanners or non-interactive contexts
+      document.getElementById('fallback').style.display = 'block';
+      document.getElementById('go').onclick = go;
+    }
+  })();
+  </script>
 </body>
+</html>
