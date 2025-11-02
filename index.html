@@ -5,40 +5,31 @@
 (function() {
   const params = new URLSearchParams(location.search);
   const target = (params.get('target') || 'web').toLowerCase();
-  const hash   = location.hash || ''; // includes #access_token=...
+  const hash = location.hash || ''; // includes #access_token=...
 
-  // Helper: conservative "human-ish" check
-  const looksInteractive = document.visibilityState === 'visible' && (navigator.maxTouchPoints || 0) >= 1;
-
-  function toWeb() {
+  function redirectToWeb() {
     location.replace('https://booking.privilist.com/router' + hash);
   }
 
-  // Example universal link host for app (configure iOS AASA + Android assetlinks)
-  const appUniversal = 'https://app.privilist.com/router' + hash;
-
-  async function toApp() {
-    // Try universal link first (no scheme handlers needed)
-    // Fallback to custom scheme if you use one:
-    // const customScheme = 'privilist://router?' + new URLSearchParams({ hash }).toString();
-    const fallbackTimer = setTimeout(() => toWeb(), 1200); // fallback in ~1.2s
-    location.href = appUniversal;
-    // If app opens, page gets backgrounded → user won't see fallback.
-    // If not, timer fires and we go to web.
+  function redirectToApp() {
+    // Use custom URL scheme
+    const customScheme = 'privilist://privilist.com/router' + hash;
+    location.href = customScheme;
+    
+    // Fallback to web if app doesn't open within 1.5s
+    setTimeout(redirectToWeb, 1500);
   }
 
-  function go() { target === 'app' ? toApp() : toWeb(); }
-
-  // SAFER: wait a beat + require page to be visible
-  if (looksInteractive) {
-    setTimeout(go, 200);
-  } else {
-    // Show a button if you want belt-and-suspenders:
-    const btn = document.createElement('button');
-    btn.textContent = target === 'app' ? 'Open the app' : 'Continue on web';
-    btn.onclick = go;
-    document.body.append(btn);
+  function redirect() {
+    if (target === 'app') {
+      redirectToApp();
+    } else {
+      redirectToWeb();
+    }
   }
+
+  // Auto-redirect after a brief moment
+  setTimeout(redirect, 300);
 })();
 </script>
 <body style="font-family: system-ui; display:grid; place-items:center; min-height:100svh;">
