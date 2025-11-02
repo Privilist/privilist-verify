@@ -82,16 +82,16 @@
     }
 
     // Safer: wait for page to be visible (reduces email-scanner-trigger)
-    // Email scanners typically have visibilityState='hidden' or maxTouchPoints=0
-    const looksHuman = document.visibilityState === 'visible' && (navigator.maxTouchPoints || 0) >= 1;
+    // Email scanners typically have visibilityState='hidden' or prerender
+    const isEmailScanner = document.visibilityState === 'hidden' || document.visibilityState === 'prerender';
     
-    if (looksHuman) {
-      // Auto-redirect for human users after brief delay
-      setTimeout(go, 200);
-    } else {
-      // Show manual button for email scanners or non-interactive contexts
+    if (isEmailScanner) {
+      // Show manual button for email scanners
       document.getElementById('fallback').style.display = 'block';
       document.getElementById('go').onclick = go;
+    } else {
+      // Auto-redirect for everyone else (including real users)
+      setTimeout(go, 200);
     }
   })();
   </script>
